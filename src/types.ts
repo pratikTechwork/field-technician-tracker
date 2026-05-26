@@ -58,11 +58,13 @@ export interface Complaint {
   technician_uuid?: string;
   visit_charge?: number | string;
   status?: ComplaintStatus | string;
+  agent_user_id?: string;
+  agent_name?: string;
   created_at?: string;
   updated_at?: string;
 }
 
-export const REQUIRED_COLUMNS: (keyof Complaint)[] = [
+export const UPLOAD_COLUMNS: (keyof Complaint)[] = [
   "ticket_id",
   "date_of_complaint",
   "client_name",
@@ -76,6 +78,22 @@ export const REQUIRED_COLUMNS: (keyof Complaint)[] = [
   "visit_charge",
   "status",
 ];
+
+export const REQUIRED_COLUMNS: (keyof Complaint)[] = [
+  "ticket_id",
+  "date_of_complaint",
+  "client_name",
+  "outlet_name",
+  "device_id",
+  "outlet_address",
+  "outlet_poc_name",
+  "outlet_poc_number",
+  "issue_type",
+  "visit_charge",
+  "status",
+];
+
+export const OPTIONAL_UPLOAD_COLUMNS: (keyof Complaint)[] = ["technician_name"];
 
 export const COLUMN_LABELS: Record<keyof Complaint, string> = {
   complaint_id: "Complaint ID",
@@ -92,6 +110,8 @@ export const COLUMN_LABELS: Record<keyof Complaint, string> = {
   technician_uuid: "Technician UUID",
   visit_charge: "Visit Charge",
   status: "Status",
+  agent_user_id: "Agent User ID",
+  agent_name: "Agent Name",
   created_at: "Created At",
   updated_at: "Updated At",
 };

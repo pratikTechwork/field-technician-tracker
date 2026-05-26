@@ -97,7 +97,7 @@ export default function App() {
         </>
       }
     >
-      {page === "complaints" ? <Dashboard /> : <ReportsPage />}
+      {page === "complaints" ? <Dashboard user={user} /> : <ReportsPage />}
     </AppLayout>
   );
 }

@@ -1,6 +1,10 @@
 import type { User } from "@supabase/supabase-js";
 
 export type UserRole = "admin" | "user" | "technician" | "unknown";
+export interface ComplaintOwnerFields {
+  agent_user_id: string;
+  agent_name: string;
+}
 
 function normalizeRoleValue(value?: string | null): UserRole {
   const normalized = value?.trim().toLowerCase();
@@ -42,4 +46,15 @@ export function getUserDisplayName(user?: User | null): string {
     user.email;
 
   return typeof displayName === "string" ? displayName : user.email || "User";
+}
+
+export function getComplaintOwnerFields(
+  user?: User | null
+): ComplaintOwnerFields | null {
+  if (!user?.id) return null;
+
+  return {
+    agent_user_id: user.id,
+    agent_name: getUserDisplayName(user),
+  };
 }

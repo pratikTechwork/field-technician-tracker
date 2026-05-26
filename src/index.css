@@ -553,6 +553,42 @@ table.report-table {
   gap: 8px;
 }
 
+.bulk-actions-bar {
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border);
+  background: #f8fafc;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bulk-selection-summary {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.bulk-selection-count {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.bulk-selection-note {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.bulk-actions-buttons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 .table-search {
   display: flex;
   align-items: center;
@@ -615,6 +651,20 @@ th {
 th.actions-col {
   text-align: center;
   width: 100px;
+}
+
+th.selection-col,
+td.selection-col {
+  text-align: center;
+  width: 52px;
+  max-width: none;
+}
+
+.table-select-input {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--primary);
 }
 
 tbody tr {

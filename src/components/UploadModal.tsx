@@ -1,15 +1,20 @@
 import { useRef, useState, useCallback } from "react";
+import type { User } from "@supabase/supabase-js";
 import * as XLSX from "xlsx";
 import { supabase, TABLE_NAME } from "../supabase";
 import {
   Complaint,
   REQUIRED_COLUMNS,
+  OPTIONAL_UPLOAD_COLUMNS,
+  UPLOAD_COLUMNS,
   COLUMN_LABELS,
   HEADER_ALIASES,
   normalizeComplaintStatus,
 } from "../types";
+import { getComplaintOwnerFields } from "../lib/auth";
 
 interface Props {
+  user: User;
   onClose: () => void;
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
@@ -35,7 +40,7 @@ function formatBytes(bytes: number): string {
   return (bytes / (1024 * 1024)).toFixed(1) + " MB";
 }
 
-export default function UploadModal({ onClose, onSuccess, onError }: Props) {
+export default function UploadModal({ user, onClose, onSuccess, onError }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [parsed, setParsed] = useState<ParsedResult | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
@@ -135,6 +140,12 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
 
   const handleImport = async () => {
     if (!parsed || parsed.missingColumns.length > 0) return;
+    const ownerFields = getComplaintOwnerFields(user);
+    if (!ownerFields) {
+      onError("Unable to identify the logged-in user.");
+      return;
+    }
+
     setUploading(true);
 
     const payload = parsed.rows.map((row) => ({
@@ -153,6 +164,8 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
           ? Number(row.visit_charge) || 0
           : 0,
       status: normalizeComplaintStatus(row.status),
+      agent_user_id: ownerFields.agent_user_id,
+      agent_name: ownerFields.agent_name,
     }));
 
     // Insert in batches of 100
@@ -190,7 +203,8 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
           <div>
             <div className="modal-title">Upload CSV / Excel</div>
             <div className="modal-subtitle">
-              All 12 column headers must be present. Values can be empty.
+              All {REQUIRED_COLUMNS.length} required column headers must be present.
+              Optional columns can be included or left out.
             </div>
           </div>
           <button className="modal-close" onClick={onClose}>✕</button>
@@ -267,6 +281,18 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
                     <span>All required columns are present. Ready to import.</span>
                   </div>
                 )}
+                {OPTIONAL_UPLOAD_COLUMNS.length > 0 && (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginBottom: 6,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Required columns:
+                  </div>
+                )}
                 <div className="validation-tags">
                   {REQUIRED_COLUMNS.map((col) => {
                     const found = parsed.foundColumns.includes(col);
@@ -280,6 +306,39 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
                     );
                   })}
                 </div>
+                {OPTIONAL_UPLOAD_COLUMNS.length > 0 && (
+                  <>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        color: "#6b7280",
+                        marginTop: 12,
+                        marginBottom: 6,
+                        fontWeight: 500,
+                      }}
+                    >
+                      Optional columns:
+                    </div>
+                    <div className="validation-tags">
+                      {OPTIONAL_UPLOAD_COLUMNS.map((col) => {
+                        const found = parsed.foundColumns.includes(col);
+                        return (
+                          <span
+                            key={col}
+                            className={`vtag ${found ? "vtag-ok" : ""}`}
+                            style={
+                              found
+                                ? undefined
+                                : { background: "#f3f4f6", color: "#6b7280" }
+                            }
+                          >
+                            {found ? "✓" : "○"} {COLUMN_LABELS[col]} (optional)
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </>
+                )}
               </div>
 
               {/* Data Preview */}
@@ -303,7 +362,7 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
                       <thead>
                         <tr>
                           <th style={{ width: 40 }}>#</th>
-                          {REQUIRED_COLUMNS.map((col) => (
+                          {UPLOAD_COLUMNS.map((col) => (
                             <th key={col}>{COLUMN_LABELS[col]}</th>
                           ))}
                         </tr>
@@ -312,7 +371,7 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
                         {parsed.rows.map((row, i) => (
                           <tr key={i}>
                             <td style={{ color: "#9ca3af", fontSize: 11 }}>{i + 1}</td>
-                            {REQUIRED_COLUMNS.map((col) => {
+                            {UPLOAD_COLUMNS.map((col) => {
                               const val = (row as any)[col];
                               const isEmpty =
                                 val === undefined || val === null || String(val).trim() === "";
@@ -350,7 +409,7 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
               <div
                 style={{ fontSize: 12, color: "#6b7280", marginBottom: 6, fontWeight: 500 }}
               >
-                Required column headers (all 12 must be present):
+                Required column headers (all {REQUIRED_COLUMNS.length} must be present):
               </div>
               <div className="validation-tags">
                 {REQUIRED_COLUMNS.map((col) => (
@@ -359,6 +418,32 @@ export default function UploadModal({ onClose, onSuccess, onError }: Props) {
                   </span>
                 ))}
               </div>
+              {OPTIONAL_UPLOAD_COLUMNS.length > 0 && (
+                <>
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: "#6b7280",
+                      marginTop: 12,
+                      marginBottom: 6,
+                      fontWeight: 500,
+                    }}
+                  >
+                    Optional column headers:
+                  </div>
+                  <div className="validation-tags">
+                    {OPTIONAL_UPLOAD_COLUMNS.map((col) => (
+                      <span
+                        key={col}
+                        className="vtag"
+                        style={{ background: "#f9fafb", color: "#6b7280" }}
+                      >
+                        {COLUMN_LABELS[col]}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </>
           )}
         </div>

@@ -1,13 +1,16 @@
 import { useState } from "react";
+import type { User } from "@supabase/supabase-js";
 import { supabase, TABLE_NAME } from "../supabase";
 import {
   Complaint,
   COMPLAINT_STATUS_OPTIONS,
   normalizeComplaintStatus,
 } from "../types";
+import { getComplaintOwnerFields } from "../lib/auth";
 import TechnicianSelect from "./TechnicianSelect";
 
 interface Props {
+  user: User;
   onClose: () => void;
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
@@ -29,7 +32,7 @@ const emptyForm = (): Partial<Complaint> => ({
   status: "Pending",
 });
 
-export default function AddEntryModal({ onClose, onSuccess, onError }: Props) {
+export default function AddEntryModal({ user, onClose, onSuccess, onError }: Props) {
   const [form, setForm] = useState<Partial<Complaint>>(emptyForm());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitting, setSubmitting] = useState(false);
@@ -52,6 +55,12 @@ export default function AddEntryModal({ onClose, onSuccess, onError }: Props) {
 
   const handleSubmit = async () => {
     if (!validate()) return;
+    const ownerFields = getComplaintOwnerFields(user);
+    if (!ownerFields) {
+      onError("Unable to identify the logged-in user.");
+      return;
+    }
+
     setSubmitting(true);
 
     const payload: Partial<Complaint> = {
@@ -71,6 +80,8 @@ export default function AddEntryModal({ onClose, onSuccess, onError }: Props) {
           ? Number(form.visit_charge)
           : 0,
       status: normalizeComplaintStatus(form.status),
+      agent_user_id: ownerFields.agent_user_id,
+      agent_name: ownerFields.agent_name,
     };
 
     const { error } = await supabase.from(TABLE_NAME).insert([payload]);

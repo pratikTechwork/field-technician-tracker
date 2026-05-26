@@ -11,12 +11,21 @@ import TechnicianSelect from "./TechnicianSelect";
 
 interface Props {
   complaint: Complaint;
+  currentUserId: string;
+  shouldScopeToCurrentUser: boolean;
   onClose: () => void;
   onSuccess: (msg: string) => void;
   onError: (msg: string) => void;
 }
 
-export default function EditModal({ complaint, onClose, onSuccess, onError }: Props) {
+export default function EditModal({
+  complaint,
+  currentUserId,
+  shouldScopeToCurrentUser,
+  onClose,
+  onSuccess,
+  onError,
+}: Props) {
   const originalStatus = normalizeComplaintStatus(complaint.status);
   const [form, setForm] = useState<Partial<Complaint>>({
     ...complaint,
@@ -86,10 +95,16 @@ export default function EditModal({ complaint, onClose, onSuccess, onError }: Pr
       updated_at: new Date().toISOString(),
     };
 
-    const { error } = await supabase
+    let query = supabase
       .from(TABLE_NAME)
       .update(payload)
       .eq("complaint_id", complaint.complaint_id);
+
+    if (shouldScopeToCurrentUser) {
+      query = query.eq("agent_user_id", currentUserId);
+    }
+
+    const { error } = await query;
 
     setSubmitting(false);
 

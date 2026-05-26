@@ -23,7 +23,7 @@ export default function AppLayout({
         <div className="header-brand">
           <div className="header-icon">🔧</div>
           <div>
-            <div className="header-title">Field Technician Tracker</div>
+            <div className="header-title">Complaint Tracker</div>
             <div className="header-subtitle">Complaint Management System</div>
           </div>
         </div>

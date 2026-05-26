@@ -30,7 +30,7 @@ export default function LoginPage() {
         <div className="auth-brand">
           <div className="auth-brand-icon">FT</div>
           <div>
-            <h1 className="auth-title">Field Technician Tracker</h1>
+            <h1 className="auth-title">Complaint Tracker</h1>
             <p className="auth-subtitle">Sign in to continue to the complaint system.</p>
           </div>
         </div>
