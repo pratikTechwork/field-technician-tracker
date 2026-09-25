@@ -35,6 +35,14 @@ export function formatDateInput(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
+export function formatComplaintDateDisplay(value: string | null | undefined): string {
+  if (!value) return "—";
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!match) return value;
+  const [, y, m, d] = match;
+  return `${d}-${m}-${y}`;
+}
+
 export function formatMonthInput(d: Date): string {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -131,6 +139,8 @@ export function joinVisits(
         punchOutAt: matched ? matched.created_at || matched.timestamp || null : null,
         punchInLocation: pi.location || "—",
         punchOutLocation: matched?.location || "—",
+        punchInImageUrl: pi.image_url || null,
+        punchOutImageUrl: matched?.image_url || null,
         visitStatus: complete ? "complete" : "incomplete",
         visitDate: punchInDate,
       };

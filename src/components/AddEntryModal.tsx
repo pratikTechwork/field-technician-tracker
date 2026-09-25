@@ -44,7 +44,6 @@ export default function AddEntryModal({ user, onClose, onSuccess, onError }: Pro
 
   const validate = (): boolean => {
     const errs: Record<string, string> = {};
-    if (!form.ticket_id?.trim()) errs.ticket_id = "Zoho Ticket is required";
     if (!form.date_of_complaint?.trim()) errs.date_of_complaint = "Date is required";
     if (!form.client_name?.trim()) errs.client_name = "Client Name is required";
     if (!form.outlet_name?.trim()) errs.outlet_name = "Outlet Name is required";
@@ -64,7 +63,7 @@ export default function AddEntryModal({ user, onClose, onSuccess, onError }: Pro
     setSubmitting(true);
 
     const payload: Partial<Complaint> = {
-      ticket_id: form.ticket_id!.trim(),
+      ticket_id: form.ticket_id?.trim() || "",
       date_of_complaint: form.date_of_complaint!,
       client_name: form.client_name!.trim(),
       outlet_name: form.outlet_name!.trim(),
@@ -90,13 +89,17 @@ export default function AddEntryModal({ user, onClose, onSuccess, onError }: Pro
     if (error) {
       onError("Insert failed: " + error.message);
     } else {
-      onSuccess(`Zoho ticket ${payload.ticket_id} added successfully!`);
+      onSuccess(
+        payload.ticket_id
+          ? `Zoho ticket ${payload.ticket_id} added successfully!`
+          : "Complaint added successfully!"
+      );
       onClose();
     }
   };
 
   return (
-    <div className="modal-overlay" onClick={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-overlay">
       <div className="modal">
         <div className="modal-header">
           <div>
@@ -110,14 +113,13 @@ export default function AddEntryModal({ user, onClose, onSuccess, onError }: Pro
           <div className="form-grid">
             {/* Zoho Ticket */}
             <div className="form-group">
-              <label className="form-label required">Zoho Ticket</label>
+              <label className="form-label">Zoho Ticket</label>
               <input
-                className={`form-input ${errors.ticket_id ? "error" : ""}`}
+                className="form-input"
                 placeholder="e.g. TKT-2024-001"
                 value={form.ticket_id || ""}
                 onChange={(e) => set("ticket_id", e.target.value)}
               />
-              {errors.ticket_id && <span className="form-error">{errors.ticket_id}</span>}
             </div>
 
             {/* Date of Complaint */}

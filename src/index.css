@@ -486,6 +486,20 @@ table.report-table {
   box-shadow: var(--shadow-md);
 }
 
+.stat-card-clickable {
+  cursor: pointer;
+  user-select: none;
+}
+
+.stat-card-clickable:hover {
+  border-color: var(--primary, #2563eb);
+}
+
+.stat-card-active {
+  border-color: var(--primary, #2563eb);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
 .stat-icon {
   width: 48px;
   height: 48px;
@@ -1344,4 +1358,61 @@ td.actions-td {
   .header-actions { gap: 6px; }
   .btn { padding: 7px 12px; font-size: 12px; }
   .auth-shell { padding: 16px; }
+}
+
+/* ─── Image Preview ─── */
+table.report-table tbody tr {
+  contain: layout style;
+}
+.report-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 6px;
+  object-fit: cover;
+  cursor: pointer;
+  border: 2px solid var(--border);
+  transition: border-color 0.15s, transform 0.15s;
+  will-change: transform;
+}
+.report-thumb:hover {
+  border-color: var(--blue);
+  transform: scale(1.08);
+}
+
+.image-preview-modal {
+  position: relative;
+  background: #111;
+  border-radius: var(--radius-xl);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: slideUp 0.2s ease;
+}
+.image-preview-modal .modal-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  color: #fff;
+  font-size: 22px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+.image-preview-modal .modal-close:hover {
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+}
+.image-preview-img {
+  max-width: 85vw;
+  max-height: 85vh;
+  border-radius: var(--radius-lg);
+  object-fit: contain;
 }

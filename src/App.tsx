@@ -5,6 +5,7 @@ import AccessDeniedPage from "./components/AccessDeniedPage";
 import Dashboard from "./components/Dashboard";
 import LoginPage from "./components/LoginPage";
 import ReportsPage from "./components/reports/ReportsPage";
+import SalesPage from "./components/sales/SalesPage";
 import { formatUserRole, getUserDisplayName, getUserRole } from "./lib/auth";
 import { supabase } from "./supabase";
 
@@ -37,13 +38,16 @@ export default function App() {
 
   const user = session?.user ?? null;
   const role = getUserRole(user);
-  const canViewReports = role === "admin";
-  const canAccessApp = role === "admin" || role === "user";
+  const canViewReports = role === "admin" || role === "super_admin";
+  const canViewSales = role === "super_admin";
+  const canAccessApp = role === "admin" || role === "user" || role === "super_admin";
 
-  const availablePages = useMemo<AppPage[]>(
-    () => (canViewReports ? ["complaints", "reports"] : ["complaints"]),
-    [canViewReports]
-  );
+  const availablePages = useMemo<AppPage[]>(() => {
+    const pages: AppPage[] = ["complaints"];
+    if (canViewReports) pages.push("reports");
+    if (canViewSales) pages.push("sales");
+    return pages;
+  }, [canViewReports, canViewSales]);
 
   useEffect(() => {
     if (!availablePages.includes(page)) {
@@ -97,7 +101,9 @@ export default function App() {
         </>
       }
     >
-      {page === "complaints" ? <Dashboard user={user} /> : <ReportsPage />}
+      {page === "complaints" && <Dashboard user={user} />}
+      {page === "reports" && <ReportsPage />}
+      {page === "sales" && <SalesPage />}
     </AppLayout>
   );
 }

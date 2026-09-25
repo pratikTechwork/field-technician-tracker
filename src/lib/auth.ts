@@ -1,14 +1,17 @@
 import type { User } from "@supabase/supabase-js";
 
-export type UserRole = "admin" | "user" | "technician" | "unknown";
+export type UserRole = "super_admin" | "admin" | "user" | "technician" | "unknown";
 export interface ComplaintOwnerFields {
   agent_user_id: string;
   agent_name: string;
 }
 
 function normalizeRoleValue(value?: string | null): UserRole {
-  const normalized = value?.trim().toLowerCase();
+  const normalized = value?.trim().toLowerCase().replace(/[\s-]+/g, "_");
 
+  if (normalized === "super_admin" || normalized === "superadmin") {
+    return "super_admin";
+  }
   if (normalized === "admin") return "admin";
   if (normalized === "user") return "user";
   if (normalized === "technician" || normalized === "technicain") {
@@ -31,6 +34,7 @@ export function getUserRole(user?: User | null): UserRole {
 }
 
 export function formatUserRole(role: UserRole): string {
+  if (role === "super_admin") return "Super Admin";
   if (role === "admin") return "Admin";
   if (role === "user") return "User";
   if (role === "technician") return "Technician";

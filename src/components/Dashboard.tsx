@@ -10,7 +10,11 @@ import {
 } from "../types";
 import { getUserRole } from "../lib/auth";
 import { downloadTableCsv } from "../lib/csvExport";
-import { formatComplaintIdDisplay, toComplaintIdKey } from "../lib/reportUtils";
+import {
+  formatComplaintDateDisplay,
+  formatComplaintIdDisplay,
+  toComplaintIdKey,
+} from "../lib/reportUtils";
 import AddEntryModal from "./AddEntryModal";
 import BulkAssignModal from "./BulkAssignModal";
 import EditModal from "./EditModal";
@@ -59,6 +63,7 @@ export default function Dashboard({ user }: Props) {
   const [editItem, setEditItem] = useState<Complaint | null>(null);
   const [deleteItem, setDeleteItem] = useState<Complaint | null>(null);
   const [showBulkAssign, setShowBulkAssign] = useState(false);
+  const [showBulkDelete, setShowBulkDelete] = useState(false);
   const [selectedComplaintKeys, setSelectedComplaintKeys] = useState<string[]>([]);
   const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -294,6 +299,38 @@ export default function Dashboard({ user }: Props) {
     setShowBulkAssign(false);
   };
 
+  const handleBulkDelete = async () => {
+    if (!selectedComplaints.length) {
+      setShowBulkDelete(false);
+      return;
+    }
+
+    const complaintIds = selectedComplaints.flatMap((complaint) =>
+      complaint.complaint_id != null ? [complaint.complaint_id] : []
+    );
+
+    let query = supabase.from(TABLE_NAME).delete().in("complaint_id", complaintIds);
+
+    if (shouldScopeToCurrentUser) {
+      query = query.eq("agent_user_id", currentUserId);
+    }
+
+    const { error } = await query;
+
+    if (error) {
+      addToast("error", "Bulk delete failed: " + error.message);
+    } else {
+      const deletedIds = new Set(complaintIds);
+      addToast(
+        "success",
+        `${selectedComplaints.length} complaint${selectedComplaints.length === 1 ? "" : "s"} deleted successfully.`
+      );
+      setComplaints((prev) => prev.filter((c) => !deletedIds.has(c.complaint_id!)));
+      clearSelectedComplaints();
+    }
+    setShowBulkDelete(false);
+  };
+
   const stats = {
     total: complaints.length,
     pending: complaints.filter(
@@ -502,6 +539,13 @@ export default function Dashboard({ user }: Props) {
               >
                 Assign Technician
               </button>
+              <button
+                className="btn btn-danger"
+                onClick={() => setShowBulkDelete(true)}
+                disabled={!selectedComplaintKeys.length}
+              >
+                🗑️ Delete Selected
+              </button>
             </div>
           </div>
 
@@ -604,7 +648,7 @@ export default function Dashboard({ user }: Props) {
                         <td>
                           <span className="ticket-id">{c.ticket_id}</span>
                         </td>
-                        <td>{c.date_of_complaint}</td>
+                        <td>{formatComplaintDateDisplay(c.date_of_complaint)}</td>
                         <td title={c.client_name}>{c.client_name}</td>
                         <td title={c.outlet_name}>{c.outlet_name}</td>
                         <td>{c.device_id || "—"}</td>
@@ -717,6 +761,14 @@ export default function Dashboard({ user }: Props) {
           complaint={deleteItem}
           onClose={() => setDeleteItem(null)}
           onConfirm={() => handleDelete(deleteItem)}
+        />
+      )}
+
+      {showBulkDelete && (
+        <ConfirmDeleteModal
+          count={selectedComplaintKeys.length}
+          onClose={() => setShowBulkDelete(false)}
+          onConfirm={handleBulkDelete}
         />
       )}
 

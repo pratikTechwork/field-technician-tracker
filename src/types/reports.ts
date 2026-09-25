@@ -33,6 +33,8 @@ export interface VisitRow {
   punchOutAt: string | null;
   punchInLocation: string;
   punchOutLocation: string;
+  punchInImageUrl: string | null;
+  punchOutImageUrl: string | null;
   visitStatus: VisitStatus;
   visitDate: Date;
 }

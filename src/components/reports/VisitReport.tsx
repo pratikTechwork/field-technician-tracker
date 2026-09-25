@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   supabase,
   PUNCHIN_TABLE,
@@ -17,6 +17,7 @@ import {
   toComplaintIdKey,
 } from "../../lib/reportUtils";
 import { downloadTableCsv } from "../../lib/csvExport";
+import ImagePreviewModal from "../ImagePreviewModal";
 
 type Mode = "daily" | "monthly";
 
@@ -38,6 +39,9 @@ export default function VisitReport({ mode }: Props) {
   const [punchins, setPunchins] = useState<PunchRecord[]>([]);
   const [punchouts, setPunchouts] = useState<PunchOutRecord[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<{ url: string; alt: string } | null>(null);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const tableWrapperRef = useRef<HTMLDivElement | null>(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -119,6 +123,29 @@ export default function VisitReport({ mode }: Props) {
       ]);
     });
   }, [visits, search, technician, visitStatus]);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [filtered]);
+
+  const visibleRows = useMemo(
+    () => filtered.slice(0, visibleCount),
+    [filtered, visibleCount]
+  );
+
+  const hasMore = visibleCount < filtered.length;
+
+  const scrollToTable = useCallback(() => {
+    tableWrapperRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, []);
+
+  const handleScroll = useCallback(() => {
+    const el = tableWrapperRef.current;
+    if (!el || !hasMore) return;
+    if (el.scrollHeight - el.scrollTop - el.clientHeight < 200) {
+      setVisibleCount((prev) => prev + 20);
+    }
+  }, [hasMore]);
 
   const stats = useMemo(
     () => ({
@@ -250,21 +277,42 @@ export default function VisitReport({ mode }: Props) {
       )}
 
       <div className="stats-grid stats-grid-3">
-        <div className="stat-card">
+        <div
+          className={`stat-card stat-card-clickable ${visitStatus === "" ? "stat-card-active" : ""}`}
+          onClick={() => {
+            setVisitStatus("");
+            scrollToTable();
+          }}
+          title="Show all visits"
+        >
           <div className="stat-icon blue">📍</div>
           <div className="stat-info">
             <div className="stat-value">{stats.total}</div>
             <div className="stat-label">Total Visits</div>
           </div>
         </div>
-        <div className="stat-card">
+        <div
+          className={`stat-card stat-card-clickable ${visitStatus === "complete" ? "stat-card-active" : ""}`}
+          onClick={() => {
+            setVisitStatus("complete");
+            scrollToTable();
+          }}
+          title="Show complete visits"
+        >
           <div className="stat-icon green">✅</div>
           <div className="stat-info">
             <div className="stat-value">{stats.complete}</div>
             <div className="stat-label">Complete</div>
           </div>
         </div>
-        <div className="stat-card">
+        <div
+          className={`stat-card stat-card-clickable ${visitStatus === "incomplete" ? "stat-card-active" : ""}`}
+          onClick={() => {
+            setVisitStatus("incomplete");
+            scrollToTable();
+          }}
+          title="Show incomplete visits (no punch-out)"
+        >
           <div className="stat-icon yellow">⚠️</div>
           <div className="stat-info">
             <div className="stat-value">{stats.incomplete}</div>
@@ -280,11 +328,11 @@ export default function VisitReport({ mode }: Props) {
               {mode === "daily" ? "Daily Visit Count" : "Monthly Visit Count"}
             </span>
             <span className="table-card-count">
-              {filtered.length} of {visits.length} records
+              {visibleRows.length} of {filtered.length} records
             </span>
           </div>
         </div>
-        <div className="table-wrapper report-table-wrapper">
+        <div ref={tableWrapperRef} onScroll={handleScroll} className="table-wrapper report-table-wrapper">
           <table className="report-table">
             <thead>
               <tr>
@@ -296,13 +344,15 @@ export default function VisitReport({ mode }: Props) {
                 <th>Punch Out</th>
                 <th>Punch In Location</th>
                 <th>Punch Out Location</th>
+                <th>Punch In Image</th>
+                <th>Punch Out Image</th>
                 <th>Status</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr className="loading-row">
-                  <td colSpan={9}>
+                  <td colSpan={11}>
                     <div
                       style={{
                         display: "flex",
@@ -316,9 +366,9 @@ export default function VisitReport({ mode }: Props) {
                     </div>
                   </td>
                 </tr>
-              ) : filtered.length === 0 ? (
+              ) :                 filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={9}>
+                  <td colSpan={11}>
                     <div className="empty-state">
                       <div className="empty-state-icon">📭</div>
                       <div className="empty-state-title">No visits found</div>
@@ -329,7 +379,7 @@ export default function VisitReport({ mode }: Props) {
                   </td>
                 </tr>
               ) : (
-                filtered.map((v, i) => (
+                visibleRows.map((v, i) => (
                   <tr key={v.punchinId}>
                     <td className="sn-col">{i + 1}</td>
                     <td title={v.complaintId}>
@@ -344,6 +394,48 @@ export default function VisitReport({ mode }: Props) {
                     <td title={v.punchInLocation}>{v.punchInLocation}</td>
                     <td title={v.punchOutLocation}>{v.punchOutLocation}</td>
                     <td>
+                      {v.punchInImageUrl ? (
+                        <img
+                          src={v.punchInImageUrl}
+                          alt="Punch In"
+                          className="report-thumb"
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          draggable={false}
+                          onClick={() =>
+                            setImagePreview({
+                              url: v.punchInImageUrl!,
+                              alt: `Punch In - ${v.technicianName}`,
+                            })
+                          }
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
+                      {v.punchOutImageUrl ? (
+                        <img
+                          src={v.punchOutImageUrl}
+                          alt="Punch Out"
+                          className="report-thumb"
+                          width={40}
+                          height={40}
+                          loading="lazy"
+                          draggable={false}
+                          onClick={() =>
+                            setImagePreview({
+                              url: v.punchOutImageUrl!,
+                              alt: `Punch Out - ${v.technicianName}`,
+                            })
+                          }
+                        />
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td>
                       <span
                         className={
                           v.visitStatus === "complete"
@@ -357,10 +449,41 @@ export default function VisitReport({ mode }: Props) {
                   </tr>
                 ))
               )}
+              {hasMore && (
+                <tr>
+                  <td colSpan={11}>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        padding: "16px 0",
+                        gap: 12,
+                      }}
+                    >
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        onClick={() => setVisibleCount((prev) => prev + 20)}
+                      >
+                        Load more ({visibleRows.length} of {filtered.length})
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {imagePreview && (
+        <ImagePreviewModal
+          imageUrl={imagePreview.url}
+          alt={imagePreview.alt}
+          onClose={() => setImagePreview(null)}
+        />
+      )}
     </div>
   );
 }

@@ -23,7 +23,7 @@ const TABS: { id: ReportTab; label: string; description: string }[] = [
   {
     id: "bucket",
     label: "Technician Bucket Count",
-    description: "Pending complaints per technician",
+    description: "Pending and complete complaints per technician, by month/year",
   },
 ];
 

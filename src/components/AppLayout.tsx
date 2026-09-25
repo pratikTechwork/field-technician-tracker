@@ -1,6 +1,6 @@
 import { ReactNode } from "react";
 
-export type AppPage = "complaints" | "reports";
+export type AppPage = "complaints" | "reports" | "sales";
 
 interface Props {
   page: AppPage;
@@ -46,6 +46,15 @@ export default function AppLayout({
                 onClick={() => onPageChange("reports")}
               >
                 Reports
+              </button>
+            )}
+            {availablePages.includes("sales") && (
+              <button
+                type="button"
+                className={`nav-tab ${page === "sales" ? "nav-tab-active" : ""}`}
+                onClick={() => onPageChange("sales")}
+              >
+                Sales
               </button>
             )}
           </nav>
